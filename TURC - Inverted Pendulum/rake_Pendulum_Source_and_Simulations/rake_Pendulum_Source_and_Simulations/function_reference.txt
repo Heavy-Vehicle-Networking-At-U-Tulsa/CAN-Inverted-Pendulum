@@ -1,0 +1,57 @@
+Nathanael Rake
+njr602@utulsa.edu
+01 May 2017
+
+Reference to accompany the Arduino sketches stateSpace.ino, stateSpace_CAN_sensor.ino, and stateSpace_CAN_controller.ino
+
+//*****************************************************************
+The arduino sketch stateSpace.ino uses a set of declarations which affect the behavior of the control system. The definitions are also shared (and distributed between) the stateSpace_CAN_sensor.ino and stateSpace_CAN_controller.ino sketches.
+
+- int velocityTimeout: the amount of milliseconds over which the system encoders are sampled when determining velocity and angular velocity. A higher number will result in higher filtering which should yeild more accurate results at the cost of a slower system response. A lower number will increase system response time but makes the system more susceptible to sensor noise.
+
+- float k1: the state feedback gain for pendulum carriage position. This value may be found using the provided MatLab simulations
+
+- float k2: the state feedback gain for pendulum carriage velocity. This value may be found using the provided MatLab simulations
+
+- float k3: the state feedback gain for pendulum arm angle. This value may be found using the provided MatLab simulations
+
+- float k4: the state feedback gain for pendulum arm anglular velocity. This value may be found using the provided MatLab simulations
+
+- float r: a reference position to which the pendulum carriage will try to drive (while still balancing the pendulum arm). While this functionality is included in stateSpace.ino, it does not function well when r is not constant and has been functionally omitted from stateSpace_CAN_sensor.ino and stateSpace_CAN_controller.ino.
+
+- float rScale: a scaling factor used to convert the position reference r to a force that may be applied to the pendulum carriage (in addition to the force applied to stabilze the system) in order to drive the cart to the reference location r. This value is often called Nbar in modern controls (particularly in Linear Systems: Optimal and Robust Control by Alok Sinha). This value is dependent on system parameters and may be found using the provided MatLab simulations.
+
+
+//*****************************************************************
+The arduino sketch stateSpace.ino uses a set of functions to control the inverted pendulum. These functions are also shared (and distributed between) the stateSpace_CAN_sensor.ino and stateSpace_CAN_controller.ino sketches.
+
+- void motorLeft(int dc):
+Drives the system motor to the left (assuming a certain configuration of the motor conection) at a speed determined by the input argument dc. This input may have integer values between 0 (no speed/movement) to 255 (maximum speed). This function uses the built-in arduino function analogWrite(int dc, int pin) to send a pwm signal to the motor.
+
+- void motorRight(int dc):
+Drives the system motor to the right (assuming a certain configuration of the motor conection) at a speed determined by the input argument dc. This input may have integer values between 0 (no speed/movement) to 255 (maximum speed). This function uses the built-in arduino function analogWrite(int dc, int pin) to send a pwm signal to the motor.
+
+- void findAngZero()
+Determines the absolute position of the pendulum arm by allowing the pendulum to reach its open loop steady state value (i.e., allows the pendulum to point straight down). This is done by repeatedly checking the encoder attached to the pendulum arm. If this encoder returns the same value (within tolerance) over a certain number of consecutive readings, the arm is assumed to have reached the steady state position. When the pendulum is reading values within tolerance, the PCB's LED1 will be illuminated. When steady state has been achieved, LED1 will then turn off and LED2 will illuminate.
+
+- void findPosZero()
+Determines the absolute position of the pendulum carriage. The carriage is moved to the left (using the motorLeft function) until it contacts the left limit switch. The encoder reading is then zeroed. The carriage is then moved to the right (using the motorRight function) until the right limit switch is contacted. The value of the encoder is then read to determine the total length of the track. The enoder is then defined to be at a position equal to half of the total track length. This definition makes the center of the carriage rails equal to the zero position. The right side of the rails is coniderd positive while the left side is considerd negative. The carriage is then driven to the left until it reaches the center of the carriage rails.
+
+- float getPos()
+Returns the position of the pendulum carriage in meters. If findPosZero has been called previously, the returned position is in reference to the center of the carriage rails. Otherwise, the reference position is unknown.
+
+- float getPosIn()
+Returns the position of the pendulum carriage in inches. If findPosZero has been called previously, the returned position is in reference to the center of the carriage rails. Otherwise, the reference position is unknown.
+
+- float getAng()
+Returns the angle of the pendulum arm in radians. If findAngZero has been called previously, the returned angle is in reference to the upright position of the pendulum (i.e., when the pendulum arm is pointing toward the ceiling, the returned angle will be zero). Otherwise, the reference position is unknown.
+
+- float getAngDeg()
+Returns the angle of the pendulum arm in degrees. If findAngZero has been called previously, the returned angle is in reference to the upright position of the pendulum (i.e., when the pendulum arm is pointing toward the ceiling, the returned angle will be zero). Otherwise, the reference position is unknown.
+
+- int engageControl()
+Returns a 1 if the pendulum arm is between -15 degrees and 15 degrees and returns 0 otherwise. This function is used as a safety precaution to ensure that a certain algorithm (the control algorithm in this case) is only used when the pendulum is within a certain operating range. If the pendulum has fallen over, for example, it is not desireable to continue moving the actuator as the pendulum is well outside of the linear control region.
+
+- float forceToDC(float force)
+Converts the input force to a digital signal that, when used as an argument to motorLeft or motorRight will (in theory) cause the actuator to apply the specified force to the pendulum carriage. It should be noted that this function can return both positive and negative values while motorLeft and motorRight can only take positive values. As a result, the output of this function must be examined to determine which function should be called. A negative return value indicates that the motor should move to the left while a positive value indicates that the motor should move to the right. If the motor is to be moved to the left (the returned value has a negative sign) the absolute value of the number should be taken before it is passed as an argument to motorLeft.
+
