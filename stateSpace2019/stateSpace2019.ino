@@ -1,7 +1,8 @@
 //************************************************
 //Program Information
 //Author: Nathanael Rake
-//Hardware: Teensy 3.2
+//Modified by: Ben Ettlinger
+//Hardware: Teensy 3.6
 
 //************************************************
 //Includes
@@ -147,17 +148,13 @@ void findPosZero(){
   motorLeft(motSpeed);
   Serial.print("\tGoing left...");
   myTimer1 = 0;
-  Serial.println(digitalRead(ls1));
-  while(digitalRead(ls1)!=0){
+  while(digitalRead(ls1)!=1){
     //keep going left
-    Serial.print(digitalRead(ls1));
     if(myTimer1 > 1000){
       myTimer1 = 0;
-      Serial.print(digitalRead(ls1));
+      Serial.print(".");
     }
-    Serial.println();
   }
-  Serial.print(digitalRead(ls1));
   Serial.println("Done!");
   motorLeft(0);
   posEnc.write(0);
@@ -166,7 +163,7 @@ void findPosZero(){
   motorRight(motSpeed);
   Serial.print("\tGoing right...");
   myTimer1 = 0;
-  while(digitalRead(ls2)!=0){
+  while(digitalRead(ls2)!=1){
     //keep going right
     if(myTimer1 > 1000){
       myTimer1 = 0;
@@ -279,8 +276,8 @@ void setup() {
   pinMode(led2, OUTPUT);
   pinMode(ledOnBoard, OUTPUT);
   
-  pinMode(ls1, INPUT);
-  pinMode(ls2, INPUT);
+  pinMode(ls1, INPUT_PULLUP);
+  pinMode(ls2, INPUT_PULLUP);
 
   pinMode(pwm1, OUTPUT);
   pinMode(pwm2, OUTPUT);
